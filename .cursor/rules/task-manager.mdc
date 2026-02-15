@@ -8,7 +8,10 @@ alwaysApply: true
 project:
   name: "智能数据分析助理"
   team: "NL2SQL"
+  # GitHub 仓库地址，用于完成阶段/任务后自动推送（必填则推送，留空则跳过）
   repo: "https://github.com/wtwq666/testProject.git"
+  # 默认推送分支（与远程 main/master 一致即可）
+  default_branch: "master"
 
 # Linear 状态映射 (团队实际状态名，勿随意修改)
 statuses:
@@ -123,7 +126,20 @@ plan:
 2. 按状态分组展示（In Progress / Todo / In Review）
 3. 用简洁的列表格式呈现
 
-### 同步计划到 Linear
+### 完成阶段/任务并推送 GitHub
+
+当用户说「完成 Phase X」「做完 XX 并推送」「开发完成，推送到 GitHub」「同步到 GitHub」或执行完一个 Phase 的开发任务后，除更新 Linear 状态外，**必须**执行 Git 推送：
+
+1. **若已配置 `project.repo` 且非空**：
+   - 执行 `git status` 查看变更
+   - 若有未提交变更：`git add .`，再 `git commit -m "PhaseX: 简短描述"`（描述与本次完成内容一致）
+   - 执行 `git push origin {project.default_branch}`（未配置 default_branch 时用 `master`）
+   - 若尚未配置 remote：`git remote add origin {project.repo}`，再 push
+   - 推送成功后回复：已推送到 GitHub，仓库：{project.repo}
+2. **若推送失败**（如未配置 git 用户、无权限、网络问题）：如实汇报错误，并提示用户在本机执行 `git push` 或检查 remote/权限。
+3. **若 `project.repo` 未配置或为空**：跳过推送，仅在回复中说明「未配置 repo，请在本机手动 push」。
+
+规则：完成任一 Phase 开发或用户明确要求「推送」「同步到 GitHub」时，**默认执行上述推送流程**，不要只更新 Linear 不推送代码。
 
 触发词: "同步计划到Linear"、"把plan同步一下"、"把计划同步上去"、"同步phase1"、"把phase2的任务创建到Linear"、"导入计划"
 
@@ -229,3 +245,4 @@ Phase2 - 前端UI (6 个任务):
 - 同步前向用户确认范围（全量还是指定 Phase），展示将要创建的任务列表
 - Phase 标签不存在时自动创建，颜色可任意
 - 同步完成后更新 plan 文件中的 todo status 保持双向一致（如 Linear 中已是 In Progress，plan 中也改为 in_progress）
+- **完成 Phase 开发或用户要求推送时**：必须先更新 Linear 对应任务为 Done，再执行 Git 提交并 `git push` 到 `project.repo`，两者都要做，不能只做 Linear 不推送 GitHub

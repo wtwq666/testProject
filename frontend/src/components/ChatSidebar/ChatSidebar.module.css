@@ -1,0 +1,36 @@
+.wrap {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  padding: 12px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.list {
+  flex: 1;
+  overflow: auto;
+  padding: 8px 0;
+}
+
+.list :global(.ant-list-item) {
+  padding: 10px 12px;
+  cursor: pointer;
+}
+
+.item:hover {
+  background: #f5f5f5;
+}
+
+.itemActive {
+  background: #e6f4ff !important;
+}
+
+.footer {
+  padding: 8px 12px;
+  font-size: 12px;
+  color: #999;
+  border-top: 1px solid #f0f0f0;
+}
