@@ -9,6 +9,7 @@ interface ChatState {
   charts: ChartData[]
   isStreaming: boolean
   currentChartId: string | null
+  chartLoading: boolean
   loading: boolean
   error: string | null
   loadSessions: () => Promise<void>
@@ -21,6 +22,7 @@ interface ChatState {
   setStreaming: (v: boolean) => void
   appendChart: (option: ChartData['option']) => void
   setCurrentChartId: (id: string | null) => void
+  setChartLoading: (v: boolean) => void
   clearError: () => void
 }
 
@@ -31,6 +33,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   charts: [],
   isStreaming: false,
   currentChartId: null,
+  chartLoading: false,
   loading: false,
   error: null,
 
@@ -174,6 +177,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
           }))
         }
         if (e.event === 'chart') {
+          set({ chartLoading: true })
           const opt = (e.data as { option?: ChartData['option'] }).option
           if (opt) get().appendChart(opt)
         }
@@ -184,11 +188,13 @@ export const useChatStore = create<ChatState>((set, get) => ({
               m.id === tempAiId ? { ...m, id: mid } : m
             ),
             isStreaming: false,
+            chartLoading: false,
           }))
         }
         if (e.event === 'error') {
           set({
             isStreaming: false,
+            chartLoading: false,
             error: (e.data as { error?: string }).error ?? '请求失败',
           })
           set((s) => ({ messages: s.messages.filter((m) => m.id !== tempAiId) }))
@@ -197,6 +203,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       .catch((e) => {
         set({
           isStreaming: false,
+          chartLoading: false,
           error: (e as Error).message,
           messages: get().messages.filter((m) => m.id !== tempAiId),
         })
@@ -204,6 +211,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   setStreaming: (v) => set({ isStreaming: v }),
+  setChartLoading: (v) => set({ chartLoading: v }),
   appendChart: (option) => {
     const { currentSessionId, charts } = get()
     if (!currentSessionId) return

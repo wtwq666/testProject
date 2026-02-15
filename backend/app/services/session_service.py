@@ -2,7 +2,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy.orm import Session as DBSession
+from sqlalchemy.orm import Session as DBSession, selectinload
 
 from app.database.connection import get_session_db_factory
 from app.database.models import Message, Session as SessionModel
@@ -49,13 +49,16 @@ def list_sessions() -> list[SessionModel]:
 
 
 def get_session(session_id: str) -> SessionModel | None:
-    """获取会话详情（含消息）"""
+    """获取会话详情（含消息）。预加载 messages 避免返回后惰性加载导致 DetachedInstanceError。"""
     factory = get_session_db_factory()
     db = factory()
     try:
-        s = db.query(SessionModel).filter(SessionModel.id == session_id).first()
-        if s:
-            db.refresh(s)
+        s = (
+            db.query(SessionModel)
+            .options(selectinload(SessionModel.messages))
+            .filter(SessionModel.id == session_id)
+            .first()
+        )
         return s
     finally:
         db.close()

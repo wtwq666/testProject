@@ -1,5 +1,5 @@
 import { useRef } from 'react'
-import { Empty, Button, List } from 'antd'
+import { Empty, Button, List, Spin } from 'antd'
 import { DownloadOutlined, BarChartOutlined } from '@ant-design/icons'
 import ReactECharts from 'echarts-for-react'
 import { useChatStore } from '../../store/chatStore'
@@ -11,10 +11,11 @@ interface ChartPanelProps {
 
 export function ChartPanel({ className }: ChartPanelProps) {
   const chartRef = useRef<any>(null)
-  const { charts, currentSessionId, currentChartId, setCurrentChartId } = useChatStore()
+  const { charts, currentSessionId, currentChartId, setCurrentChartId, chartLoading } = useChatStore()
 
   const sessionCharts = currentSessionId ? charts.filter((c) => c.session_id === currentSessionId) : []
   const currentChart = sessionCharts.find((c) => c.id === currentChartId) ?? sessionCharts[0]
+  const showChartLoading = chartLoading
 
   const handleDownload = () => {
     if (!currentChart?.option) return
@@ -44,7 +45,12 @@ export function ChartPanel({ className }: ChartPanelProps) {
           </Empty>
         ) : (
           <>
-            <div style={{ height: 280, width: '100%' }}>
+            <div style={{ height: 280, width: '100%', position: 'relative' }}>
+              {showChartLoading && (
+                <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.7)', zIndex: 1 }}>
+                  <Spin tip="图表生成中..." />
+                </div>
+              )}
               <ReactECharts ref={chartRef} option={currentChart.option} style={{ height: '100%', width: '100%' }} notMerge />
             </div>
             <div className={styles.actions}>

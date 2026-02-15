@@ -23,7 +23,10 @@ export function ChatSidebar({ className }: ChatSidebarProps) {
     }
     if (key === 'rename') {
       const title = prompt('新标题', session.title)
-      if (title?.trim()) await renameSession(session.id, title.trim())
+      if (title?.trim()) {
+        await renameSession(session.id, title.trim())
+        message.success('已重命名')
+      }
     }
   }
 
@@ -56,7 +59,7 @@ export function ChatSidebar({ className }: ChatSidebarProps) {
           </List.Item>
         )}
       />
-      <div className={styles.footer}>智能数据分析助理 · Phase3</div>
+      <div className={styles.footer}>智能数据分析助理 · Phase4</div>
     </div>
   )
 }
