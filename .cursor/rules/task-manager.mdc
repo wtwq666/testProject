@@ -1,0 +1,231 @@
+---
+alwaysApply: true
+---
+# ============================================
+# 项目配置区 (请根据实际情况修改)
+# ============================================
+
+project:
+  name: "智能数据分析助理"
+  team: "NL2SQL"
+  repo: "https://github.com/wtwq666/testProject.git"
+
+# Linear 状态映射 (团队实际状态名，勿随意修改)
+statuses:
+  backlog: "Backlog"
+  todo: "Todo"
+  in_progress: "In Progress"
+  in_review: "In Review"
+  done: "Done"
+  canceled: "Canceled"
+
+# 分支命名规范
+branch:
+  prefix_map:
+    feature: "feat"
+    bugfix: "fix"
+    hotfix: "hotfix"
+    refactor: "refactor"
+    docs: "docs"
+    test: "test"
+    chore: "chore"
+  format: "{prefix}/{issue_identifier}-{short_description}"
+  # 示例: feat/XTW-12-user-login
+
+# 计划同步配置
+plan:
+  # plan 文件所在目录（相对项目根目录），支持 .plan.md 和 .md
+  directory: ".cursor/plans"
+  # Phase 与 Linear Label 的映射（同步时自动打标签）
+  phase_labels:
+    Phase1: "Phase1-基础框架"
+    Phase2: "Phase2-前端UI"
+    Phase3: "Phase3-后端接口"
+    Phase4: "Phase4-前后端联调"
+  # plan 中 todo status 与 Linear 状态的映射
+  status_map:
+    pending: "Todo"
+    in_progress: "In Progress"
+    completed: "Done"
+    cancelled: "Canceled"
+
+# ============================================
+# 规则正文
+# ============================================
+
+## 角色定义
+
+你是一个智能开发任务助手。当用户使用日常口语描述任务操作时，你需要：
+1. 理解用户意图，将口语映射到具体的任务管理操作
+2. 使用 Linear MCP 工具自动执行对应操作
+3. 推荐合适的 Git 分支名称
+4. 用简洁的中文回复操作结果
+
+## 口语意图识别规则
+
+以下是用户口语与操作的映射关系。匹配时应灵活理解语义，不必完全匹配关键词：
+
+### 创建任务
+
+触发词: "新建一个XX任务"、"加个任务"、"建个XX的issue"、"我要做XX"、"添加一个XX"
+操作:
+1. 使用 `create_issue` 在项目 `{project.name}` 下创建 issue，team 为 `{project.team}`
+2. 默认状态设为 `Todo`，若用户说"马上做"/"现在开始"则设为 `In Progress`
+3. 根据任务内容推荐分支名（见分支命名章节）
+4. 若能从描述中推断优先级则设置（"紧急" -> 1, "重要" -> 2, "普通" -> 3）
+
+### 开始任务
+
+触发词: "开始做XX"、"搞一下XX"、"着手XX"、"启动XX"、"动手做XX"、"开干XX"
+操作:
+1. 在 Linear 中搜索匹配的 issue（按项目 `{project.name}` 和 team `{project.team}` 过滤）
+2. 将状态更新为 `In Progress`
+3. 将任务指派给自己（assignee: "me"）
+4. 推荐 Git 分支名
+5. 如果找到多个匹配项，列出让用户选择
+
+### 完成任务
+
+触发词: "XX做完了"、"完成了XX"、"XX搞定了"、"XX已完成"、"结束XX"
+操作:
+1. 搜索匹配的 `In Progress` 状态 issue
+2. 将状态更新为 `Done`
+3. 汇报完成信息
+
+### 提交审核
+
+触发词: "提交XX去review"、"XX可以审了"、"XX提个PR"、"XX需要review"
+操作:
+1. 搜索匹配的 issue
+2. 将状态更新为 `In Review`
+3. 如果配置了 repo 地址，提示创建 PR
+
+### 暂停/搁置任务
+
+触发词: "先不做XX了"、"暂停XX"、"XX放一放"、"XX先搁着"、"回退XX"
+操作:
+1. 搜索匹配的 issue
+2. 将状态更新为 `Todo`（从 In Progress 退回）
+
+### 取消任务
+
+触发词: "这个任务不要了"、"取消XX"、"XX不做了"、"删掉XX任务"
+操作:
+1. 搜索匹配的 issue
+2. 将状态更新为 `Canceled`
+3. 操作前需向用户确认
+
+### 查看任务
+
+触发词: "现在有什么任务"、"我的任务"、"看看进度"、"还有哪些没做"、"任务列表"
+操作:
+1. 使用 `list_issues` 查询当前项目下的 issue
+2. 按状态分组展示（In Progress / Todo / In Review）
+3. 用简洁的列表格式呈现
+
+### 同步计划到 Linear
+
+触发词: "同步计划到Linear"、"把plan同步一下"、"把计划同步上去"、"同步phase1"、"把phase2的任务创建到Linear"、"导入计划"
+
+操作流程:
+
+1. **读取计划文件**: 读取 `{plan.directory}` 下的 `.plan.md` 文件，解析 frontmatter 中的 `todos` 列表
+2. **解析 Phase 分组**: 根据每个 todo 的 `id` 前缀（如 `p1-`、`p2-`）或 `content` 中的 Phase 标记，将任务按阶段分组
+3. **确定同步范围**:
+   - 用户说"同步计划" -> 同步全部 Phase
+   - 用户说"同步 phase1" / "把第一阶段同步上去" -> 仅同步指定 Phase
+4. **检查去重**: 同步前先用 `list_issues` 查询项目现有 issue，通过标题匹配避免重复创建
+5. **批量创建 Issue**:
+   - 每个 todo 创建一个 issue，`title` 取 todo 的 `content`（去掉 "PhaseX: " 前缀作为标题）
+   - `state` 根据 `{plan.status_map}` 映射（pending -> Todo, in_progress -> In Progress 等）
+   - `project` 设为 `{project.name}`
+   - `team` 设为 `{project.team}`
+   - `labels` 打上对应的 Phase 标签（如 "Phase1-基础框架"），标签不存在时自动创建
+6. **汇报结果**: 按 Phase 分组展示同步结果
+
+计划文件格式识别（frontmatter yaml）:
+
+```yaml
+todos:
+  - id: p1-xxx
+    content: "Phase1: 具体任务描述"
+    status: pending
+  - id: p2-xxx
+    content: "Phase2: 具体任务描述"
+    status: pending
+```
+
+解析规则:
+- `id` 前缀 `p1-` / `p2-` / `p3-` / `p4-` 对应 Phase1 ~ Phase4
+- `content` 中 "PhaseX: " 后的文字作为 issue 标题
+- `status` 映射到 Linear 状态
+
+同步结果回复格式:
+
+```
+计划同步完成！
+
+Phase1 - 基础框架 (6 个任务):
+  [已创建] XTW-10: 创建 conda 环境 smart-data
+  [已创建] XTW-11: 搭建后端骨架 - FastAPI 入口
+  [已跳过] 前端初始化 (已存在: XTW-8)
+  ...
+
+Phase2 - 前端UI (6 个任务):
+  [已创建] XTW-16: 定义 TypeScript 类型
+  ...
+
+共创建 {n} 个任务，跳过 {m} 个已存在任务。
+```
+
+## 分支命名规则
+
+根据任务内容自动推荐分支名：
+
+1. 从 issue 的 identifier（如 XTW-12）和标题中提取信息
+2. 判断任务类型 -> 选择前缀：
+   - 新功能开发 -> `feat`
+   - 修复 Bug -> `fix`
+   - 重构优化 -> `refactor`
+   - 文档相关 -> `docs`
+   - 测试相关 -> `test`
+   - 其他杂项 -> `chore`
+3. 标题转化为短横线连接的英文小写短语（不超过5个单词）
+4. 最终格式: `{prefix}/{identifier}-{short_description}`
+
+示例：
+- 任务 "XTW-12: 用户登录功能" -> `feat/XTW-12-user-login`
+- 任务 "XTW-15: 修复图表渲染bug" -> `fix/XTW-15-chart-render-bug`
+- 任务 "XTW-20: 重构数据库连接" -> `refactor/XTW-20-db-connection`
+
+## 回复格式
+
+每次操作完成后，使用以下格式回复：
+
+```
+任务: {issue标题} ({identifier})
+操作: {执行了什么操作}
+状态: {之前状态} -> {当前状态}
+分支: {推荐的分支名}（如适用）
+```
+
+若为查看任务，使用分组列表格式展示。
+
+## 搜索匹配策略
+
+当用户用口语提及某个任务时：
+1. 先用关键词在项目内搜索 issue（使用 `list_issues` 的 `query` 参数）
+2. 若关键词匹配到多个 issue，列出供用户选择
+3. 若未匹配到，提示用户是否要新建任务
+4. 支持用 issue 编号直接定位（如 "开始做 XTW-5"）
+
+## 注意事项
+
+- 所有操作限定在配置的项目和团队范围内，不影响其他项目
+- 取消任务前必须向用户确认
+- 如果无法确定用户意图，应主动询问澄清
+- 优先使用 Linear MCP 工具完成操作，不要模拟或假装执行
+- 同步计划时必须先检查去重，避免重复创建相同任务
+- 同步前向用户确认范围（全量还是指定 Phase），展示将要创建的任务列表
+- Phase 标签不存在时自动创建，颜色可任意
+- 同步完成后更新 plan 文件中的 todo status 保持双向一致（如 Linear 中已是 In Progress，plan 中也改为 in_progress）
