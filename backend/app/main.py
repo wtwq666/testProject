@@ -37,5 +37,8 @@ def health():
     return {"status": "ok"}
 
 
-# 后续 Phase 在此挂载: app.include_router(session_router, prefix="/api", tags=["session"])
-# app.include_router(chat_router, prefix="/api", tags=["chat"])
+from app.api.chat import router as chat_router
+from app.api.session import router as session_router
+
+app.include_router(session_router, prefix="/api", tags=["session"])
+app.include_router(chat_router, prefix="/api", tags=["chat"])

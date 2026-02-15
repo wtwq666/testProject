@@ -20,6 +20,11 @@ def _ensure_data_dir(url: str) -> str:
     return url
 
 
+def get_database_url() -> str:
+    """获取业务库的解析后 URL（供 LangChain SQLDatabase 使用）"""
+    return _ensure_data_dir(settings.DATABASE_URL)
+
+
 def get_engine(db_url: str | None = None):
     """获取业务数据库 engine"""
     url = db_url or settings.DATABASE_URL
@@ -34,9 +39,14 @@ def get_session_db_engine():
 
 
 def get_session_factory(engine=None):
-    """获取 Session 工厂"""
+    """获取业务库 Session 工厂"""
     engine = engine or get_engine()
     return sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+
+def get_session_db_factory():
+    """获取会话库 Session 工厂"""
+    return sessionmaker(autocommit=False, autoflush=False, bind=get_session_db_engine())
 
 
 def init_db():

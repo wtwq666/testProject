@@ -16,14 +16,14 @@ export function ChatSidebar({ className }: ChatSidebarProps) {
     (a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
   )
 
-  const handleMenuClick = (key: string, session: Session) => {
+  const handleMenuClick = async (key: string, session: Session) => {
     if (key === 'delete') {
-      deleteSession(session.id)
+      await deleteSession(session.id)
       message.success('已删除')
     }
     if (key === 'rename') {
       const title = prompt('新标题', session.title)
-      if (title?.trim()) renameSession(session.id, title.trim())
+      if (title?.trim()) await renameSession(session.id, title.trim())
     }
   }
 
@@ -35,7 +35,7 @@ export function ChatSidebar({ className }: ChatSidebarProps) {
   return (
     <div className={`${styles.wrap} ${className ?? ''}`}>
       <div className={styles.header}>
-        <Button type="primary" icon={<PlusOutlined />} block onClick={createSession}>
+        <Button type="primary" icon={<PlusOutlined />} block onClick={() => createSession()}>
           新建对话
         </Button>
       </div>
@@ -56,7 +56,7 @@ export function ChatSidebar({ className }: ChatSidebarProps) {
           </List.Item>
         )}
       />
-      <div className={styles.footer}>智能数据分析助理 · Phase2</div>
+      <div className={styles.footer}>智能数据分析助理 · Phase3</div>
     </div>
   )
 }
