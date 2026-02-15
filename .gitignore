@@ -29,3 +29,6 @@ Thumbs.db
 *.log
 npm-debug.log*
 
+# Temp commit message (UTF-8)
+commit_msg_utf8.txt
+

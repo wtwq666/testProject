@@ -91,6 +91,7 @@ SmartDataAssistant/
 
 - 后端环境变量见 `backend/.env.example`，复制为 `backend/.env` 并填写 `KIMI_API_KEY` 等。
 - Linear 与 GitHub 在 `.cursor/rules/task-manager.mdc` 的配置区修改。
+- **Windows 下 Git 中文提交信息**：在仓库内执行 `git config i18n.commitEncoding utf-8` 与 `git config i18n.logOutputEncoding utf-8`，提交时用英文或使用 `git commit -F 文件名`（文件保存为 UTF-8 无 BOM）避免乱码。
 
 ## 开发阶段
 
