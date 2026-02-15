@@ -2,6 +2,16 @@
 import json
 import re
 
+TOOL_CALL_PATTERN = re.compile(
+    r"functions\.sql_db_\w+:\d+\s*\S*\{[^}]*\"tool_input\"[^}]*\}",
+    re.MULTILINE,
+)
+
+
+def sanitize_agent_output(text: str) -> str:
+    """移除 LangChain 工具调用的原始输出，避免展示给用户"""
+    return TOOL_CALL_PATTERN.sub("", text).strip()
+
 
 def extract_chart_json(text: str) -> str | None:
     """从 LLM 回答中提取 [CHART]...[/CHART] 内的 JSON 字符串"""
@@ -32,6 +42,7 @@ def parse_chart_from_response(full_response: str) -> tuple[str, dict | None]:
     1. 纯文字部分（不含 [CHART]...[/CHART]）
     2. 图表 option（若有且有效）
     """
+    full_response = sanitize_agent_output(full_response)
     chart_raw = extract_chart_json(full_response)
     text = re.sub(r"\[CHART\].*?\[/CHART\]", "", full_response, flags=re.DOTALL).strip()
 

@@ -35,7 +35,7 @@ def get_sql_agent():
         _agent = create_sql_agent(
             llm=llm,
             db=db,
-            agent_type="openai-tools",
+            agent_type="zero-shot-react-description",
             verbose=True,
         )
     return _agent
